@@ -1,11 +1,14 @@
 {
   "name": "terraempleo-server",
   "version": "1.0.0",
+  "description": "Backend TerraEmpleo - Node.js + Express + PostgreSQL",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
     "start": "node index.js",
-    "dev": "node index.js"
+    "dev": "npm run migrate && npm run seed && node index.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -18,3 +21,4 @@
     "pg": "^8.12.0"
   }
 }
+

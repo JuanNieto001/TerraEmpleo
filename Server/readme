@@ -1,0 +1,7 @@
+## Base de datos
+
+1) Crear DB: terraempleo
+2) Ejecutar migraciones en orden:
+- db/migrations/001_init.sql
+- db/migrations/002_create_users.sql
+- db/migrations/003_create_farms.sql
