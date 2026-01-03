@@ -141,15 +141,17 @@ export default function FarmFormScreen({ navigation, route }) {
       const payload = {
         name: name.trim(),
         location: location.trim() || null,
-        areaHa: areaNumber,
+        areaHa: areaNumber, // (si el backend no lo usa aún, no afecta)
         imageUrl: uploadedUrl || null,
       };
 
-      const endpoint = editingFarm?.id
+      const isEditing = Boolean(editingFarm?.id);
+
+      const endpoint = isEditing
         ? `${API_URL}/farms/${editingFarm.id}`
         : `${API_URL}/farms`;
 
-      const method = editingFarm?.id ? 'PUT' : 'POST';
+      const method = isEditing ? 'PUT' : 'POST';
 
       const res = await fetch(endpoint, {
         method,
@@ -168,7 +170,24 @@ export default function FarmFormScreen({ navigation, route }) {
         return;
       }
 
-      // ✅ Antes era { name: 'Home' }. Ahora debe volver a Tabs -> HomeTab
+      // ✅ Opción 2:
+      // Si CREO la finca -> ir directo a Crear Oferta con el farmId
+      if (!isEditing) {
+        const farmId = data?.farm?.id;
+        if (!farmId) {
+          Alert.alert('Error', 'La finca se creó pero no llegó el id.');
+          resetToHome();
+          return;
+        }
+
+        navigation.replace('CreateOffer', {
+          farmId,
+          farm: data.farm, // opcional: útil si quieres mostrar nombre en la siguiente pantalla
+        });
+        return;
+      }
+
+      // Si EDITO finca -> volver a Tabs -> HomeTab
       resetToHome();
     } catch (e) {
       console.error(e);
@@ -230,7 +249,7 @@ export default function FarmFormScreen({ navigation, route }) {
           </View>
         ) : (
           <Text style={styles.primaryBtnText}>
-            {editingFarm ? 'Guardar cambios' : 'Crear finca'}
+            {editingFarm ? 'Guardar cambios' : 'Crear finca y crear oferta'}
           </Text>
         )}
       </Pressable>

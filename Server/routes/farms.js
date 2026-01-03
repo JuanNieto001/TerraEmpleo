@@ -1,7 +1,9 @@
+// Server/routes/farms.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 function requireAuth(req, res, next) {
   try {

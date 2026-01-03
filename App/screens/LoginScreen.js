@@ -56,6 +56,7 @@ export default function LoginScreen({ navigation }) {
         }
         setError(data.message || 'Error al iniciar sesión');
         return;
+        
       }
 
       // ✅ Guardar sesión en memoria (token + user)

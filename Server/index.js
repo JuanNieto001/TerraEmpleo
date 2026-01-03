@@ -1,3 +1,4 @@
+// Server/index.js
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
@@ -7,8 +8,9 @@ require("dotenv").config();
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 
-const pool = require("./db");
+const pool = require("./db"); // Server/db/index.js
 const farmsRouter = require("./routes/farms");
+const offersRouter = require("./routes/offers"); // ✅ NUEVO
 
 const app = express();
 
@@ -82,7 +84,9 @@ function requireAuth(req, res, next) {
 
 app.get("/", (req, res) => res.send("API TerraEmpleo OK ✅"));
 
+// ✅ RUTAS
 app.use("/farms", farmsRouter);
+app.use("/farms", offersRouter); // ✅ NUEVO: /farms/:farmId/offers
 
 /* ======================
    UPLOAD
@@ -251,9 +255,6 @@ app.post("/auth/login", async (req, res) => {
 /* ======================
    UPDATE ME (NAME / PASSWORD)
    PUT /users/me
-   Body (opcional):
-   - name
-   - currentPassword + newPassword
 ====================== */
 app.put("/users/me", requireAuth, async (req, res) => {
   try {
@@ -272,7 +273,6 @@ app.put("/users/me", requireAuth, async (req, res) => {
       return res.status(400).json({ message: "No hay cambios para guardar" });
     }
 
-    // Traer usuario actual
     const r = await pool.query(
       "SELECT id, name, phone, email, role, password_hash, created_at FROM users WHERE id=$1",
       [userId]
@@ -284,7 +284,6 @@ app.put("/users/me", requireAuth, async (req, res) => {
 
     const row = r.rows[0];
 
-    // 1) Cambiar contraseña (si aplica)
     let newHash = null;
 
     if (wantsPassword) {
@@ -311,10 +310,8 @@ app.put("/users/me", requireAuth, async (req, res) => {
       newHash = await bcrypt.hash(np, 10);
     }
 
-    // 2) Cambiar nombre (si aplica)
     const newName = wantsName ? String(name).trim() : row.name;
 
-    // Update
     await pool.query(
       `UPDATE users
        SET name = $1,
@@ -323,7 +320,6 @@ app.put("/users/me", requireAuth, async (req, res) => {
       [newName, newHash, userId]
     );
 
-    // devolver usuario actualizado (sin password_hash)
     const updated = await pool.query(
       "SELECT id, name, phone, email, role, created_at FROM users WHERE id=$1",
       [userId]

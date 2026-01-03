@@ -176,7 +176,12 @@ export default function HomeScreen({ navigation }) {
             return (
               <Pressable
                 style={[styles.card, { width: cardWidth }]}
-                onPress={() => goToFarmDetail({ farm: item })} // ✅ Stack padre
+                onPress={() =>
+                  goToFarmDetail({
+                    farmId: item.id, // ✅ NUEVO: asegura que detalle pueda cargar ofertas
+                    farm: item,      // ✅ se conserva para mostrar rápido
+                  })
+                }
               >
                 {item.image_url ? (
                   <Image source={{ uri: item.image_url }} style={styles.image} />
@@ -362,4 +367,3 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
 });
-
