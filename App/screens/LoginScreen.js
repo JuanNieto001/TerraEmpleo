@@ -61,8 +61,6 @@ export default function LoginScreen({ navigation }) {
       // ✅ Guardar sesión en memoria (token + user)
       // backend devuelve { user, token }
       signIn({ user: data.user, token: data.token });
-
-      navigation.replace('Home');
     } catch (err) {
       setError('No se pudo conectar con el servidor');
     }

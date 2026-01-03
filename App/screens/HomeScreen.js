@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,40 @@ import {
   Image,
   Alert,
   Platform,
-} from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { API_URL } from '../config';
-import { AuthContext } from '../auth';
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { API_URL } from "../config";
+import { AuthContext } from "../auth";
 
 export default function HomeScreen({ navigation }) {
-  const { user, token, signOut } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
   const [farms, setFarms] = useState([]);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  const isAdmin = user?.role === 'admin';
-  const isOwner = user?.role === 'owner';
+  const isAdmin = user?.role === "admin";
+  const isOwner = user?.role === "owner";
+
+  /* =============================
+     HELPERS: navegar al Stack padre
+  ============================== */
+  function goToFarmForm(params) {
+    const parent = navigation.getParent?.();
+    if (parent) {
+      parent.navigate("FarmForm", params);
+    } else {
+      // fallback por si alguna vez cambia estructura
+      navigation.navigate("FarmForm", params);
+    }
+  }
+
+  function goToFarmDetail(params) {
+    const parent = navigation.getParent?.();
+    if (parent) {
+      parent.navigate("FarmDetail", params);
+    } else {
+      navigation.navigate("FarmDetail", params);
+    }
+  }
 
   /* =============================
      CARGAR FINCAS
@@ -30,7 +52,7 @@ export default function HomeScreen({ navigation }) {
       const data = await res.json();
       setFarms(data.farms || []);
     } catch (e) {
-      console.error('Error cargando fincas:', e);
+      console.error("Error cargando fincas:", e);
     }
   }
 
@@ -56,53 +78,48 @@ export default function HomeScreen({ navigation }) {
   async function handleDelete(id) {
     try {
       const res = await fetch(`${API_URL}/farms/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        Alert.alert('Error', data?.error || 'No se pudo eliminar.');
+        Alert.alert("Error", data?.error || "No se pudo eliminar.");
         return;
       }
 
       loadFarms();
     } catch (e) {
-      console.error('Error eliminando:', e);
+      console.error("Error eliminando:", e);
     }
   }
 
   function confirmDelete(id) {
-    if (Platform.OS === 'web') {
-      const ok = window.confirm('¿Seguro que deseas eliminar esta finca?');
+    if (Platform.OS === "web") {
+      const ok = window.confirm("¿Seguro que deseas eliminar esta finca?");
       if (ok) handleDelete(id);
       return;
     }
 
-    Alert.alert('Eliminar finca', '¿Seguro que deseas eliminar esta finca?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => handleDelete(id) },
+    Alert.alert("Eliminar finca", "¿Seguro que deseas eliminar esta finca?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Eliminar", style: "destructive", onPress: () => handleDelete(id) },
     ]);
   }
 
   /* =============================
-     GRID RESPONSIVE REAL
+     GRID: 2 COLUMNAS FIJAS
   ============================== */
-  const GAP = 12;
-  const MAX_WIDTH = 1000;
-
-  const columns = useMemo(() => {
-    if (containerWidth >= 900) return 3;
-    if (containerWidth >= 600) return 2;
-    return 1;
-  }, [containerWidth]);
+  const GAP = 10;
+  const MAX_WIDTH = 720;
+  const columns = 2;
 
   const cardWidth = useMemo(() => {
-    if (!containerWidth) return 260;
+    if (!containerWidth) return 280;
     const totalGaps = GAP * (columns - 1);
     return Math.floor((containerWidth - totalGaps) / columns);
-  }, [containerWidth, columns]);
+  }, [containerWidth]);
 
   /* =============================
      HEADER
@@ -115,8 +132,7 @@ export default function HomeScreen({ navigation }) {
 
         {!!user?.name && (
           <Text style={styles.userLine}>
-            Sesión: {user.name}{' '}
-            {isAdmin ? '(admin)' : isOwner ? '(dueño)' : '(usuario)'}
+            Sesión: {user.name} {isAdmin ? "(admin)" : isOwner ? "(dueño)" : "(usuario)"}
           </Text>
         )}
       </View>
@@ -124,7 +140,7 @@ export default function HomeScreen({ navigation }) {
       {(isAdmin || isOwner) && (
         <Pressable
           style={styles.addButton}
-          onPress={() => navigation.navigate('FarmForm')}
+          onPress={() => goToFarmForm(undefined)} // ✅ Stack padre
         >
           <Text style={styles.addButtonText}>+ Nueva finca</Text>
         </Pressable>
@@ -148,15 +164,11 @@ export default function HomeScreen({ navigation }) {
           data={farms}
           keyExtractor={(item) => String(item.id)}
           ListHeaderComponent={ListHeader}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>Aún no hay fincas.</Text>
-          }
+          ListEmptyComponent={<Text style={styles.emptyText}>Aún no hay fincas.</Text>}
           showsVerticalScrollIndicator={false}
           numColumns={columns}
           key={columns}
-          columnWrapperStyle={
-            columns > 1 ? { gap: GAP, marginBottom: GAP } : undefined
-          }
+          columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
             const allowed = canEditOrDelete(item);
@@ -164,7 +176,7 @@ export default function HomeScreen({ navigation }) {
             return (
               <Pressable
                 style={[styles.card, { width: cardWidth }]}
-                onPress={() => navigation.navigate('FarmDetail', { farm: item })}
+                onPress={() => goToFarmDetail({ farm: item })} // ✅ Stack padre
               >
                 {item.image_url ? (
                   <Image source={{ uri: item.image_url }} style={styles.image} />
@@ -195,9 +207,7 @@ export default function HomeScreen({ navigation }) {
                     <View style={styles.actions}>
                       <Pressable
                         style={[styles.actionBtn, styles.editBtn]}
-                        onPress={() =>
-                          navigation.navigate('FarmForm', { farm: item })
-                        }
+                        onPress={() => goToFarmForm({ farm: item })} // ✅ Stack padre + params
                       >
                         <Text style={styles.actionText}>Editar</Text>
                       </Pressable>
@@ -206,9 +216,7 @@ export default function HomeScreen({ navigation }) {
                         style={[styles.actionBtn, styles.deleteBtn]}
                         onPress={() => confirmDelete(item.id)}
                       >
-                        <Text style={[styles.actionText, { color: '#fff' }]}>
-                          Eliminar
-                        </Text>
+                        <Text style={[styles.actionText, { color: "#fff" }]}>Eliminar</Text>
                       </Pressable>
                     </View>
                   ) : (
@@ -221,10 +229,6 @@ export default function HomeScreen({ navigation }) {
             );
           }}
         />
-
-        <Pressable style={styles.logoutButton} onPress={signOut}>
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -232,138 +236,130 @@ export default function HomeScreen({ navigation }) {
 
 /* =============================
    ESTILOS
-============================== */
+============================= */
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F3F6EF',
-    alignItems: 'center',
+    backgroundColor: "#F3F6EF",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 10,
   },
   page: {
-    width: '100%',
+    width: "100%",
     flex: 1,
   },
 
+  // ✅ espacio extra para que no tape la tab bar
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 140,
   },
 
   header: {
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: "center",
+    marginBottom: 14,
   },
 
   headerCenter: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 10,
   },
 
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#1B5E20',
-    textAlign: 'center',
+    fontWeight: "800",
+    color: "#1B5E20",
+    textAlign: "center",
   },
   subtitle: {
-    color: '#4E6E4F',
+    color: "#4E6E4F",
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   userLine: {
-    color: '#4E6E4F',
+    color: "#4E6E4F",
     marginTop: 6,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   addButton: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: "#1B5E20",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
-  addButtonText: { color: '#fff', fontWeight: '800' },
+  addButtonText: { color: "#fff", fontWeight: "800" },
 
   emptyText: {
-    textAlign: 'center',
-    color: '#4E6E4F',
+    textAlign: "center",
+    color: "#4E6E4F",
     marginTop: 40,
   },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: '#D7E3D2',
+    borderColor: "#D7E3D2",
     elevation: 2,
   },
 
-  image: { width: '100%', height: 120 },
+  image: { width: "100%", height: 105 },
   noImage: {
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E8F2E6',
+    height: 105,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8F2E6",
   },
-  noImageText: { color: '#4E6E4F', fontWeight: '700' },
+  noImageText: { color: "#4E6E4F", fontWeight: "700" },
 
-  cardContent: { padding: 10 },
+  cardContent: { padding: 9 },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1B5E20',
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#1B5E20",
   },
   cardText: {
-    color: '#4E6E4F',
+    color: "#4E6E4F",
     marginTop: 3,
-    fontSize: 13,
+    fontSize: 12.5,
   },
 
   actions: {
-    flexDirection: 'row',
-    marginTop: 10,
+    flexDirection: "row",
+    marginTop: 9,
     gap: 8,
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  editBtn: { backgroundColor: '#E8F2E6' },
-  deleteBtn: { backgroundColor: '#B71C1C' },
+  editBtn: { backgroundColor: "#E8F2E6" },
+  deleteBtn: { backgroundColor: "#B71C1C" },
   actionText: {
-    fontWeight: '800',
-    color: '#1B5E20',
-    fontSize: 13,
+    fontWeight: "800",
+    color: "#1B5E20",
+    fontSize: 12.5,
   },
 
   viewOnlyHint: {
-    marginTop: 10,
-    paddingVertical: 8,
+    marginTop: 9,
+    paddingVertical: 7,
     borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: '#F3F6EF',
+    alignItems: "center",
+    backgroundColor: "#F3F6EF",
     borderWidth: 1,
-    borderColor: '#D7E3D2',
+    borderColor: "#D7E3D2",
   },
   viewOnlyText: {
-    color: '#4E6E4F',
-    fontWeight: '800',
-    fontSize: 13,
+    color: "#4E6E4F",
+    fontWeight: "800",
+    fontSize: 12.5,
   },
-
-  logoutButton: {
-    backgroundColor: '#B71C1C',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 10,
-  },
-  logoutText: { color: '#fff', fontWeight: '800' },
 });
+

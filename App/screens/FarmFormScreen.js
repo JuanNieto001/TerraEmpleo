@@ -36,6 +36,16 @@ export default function FarmFormScreen({ navigation, route }) {
       editingFarm?.owner_user_id != null &&
       Number(editingFarm.owner_user_id) === Number(user?.id));
 
+  // ✅ helper: volver a HomeTab dentro de MainTabs (Stack)
+  function resetToHome() {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { screen: 'HomeTab' } }],
+      })
+    );
+  }
+
   useEffect(() => {
     // Sin sesión -> Login
     if (!user || !token) {
@@ -45,19 +55,15 @@ export default function FarmFormScreen({ navigation, route }) {
       return;
     }
 
-    // Si intenta crear sin permisos -> Home
+    // Si intenta crear sin permisos -> Home (tabs)
     if (!editingFarm && !allowedToCreate) {
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: 'Home' }] })
-      );
+      resetToHome();
       return;
     }
 
-    // Si intenta editar sin permisos -> Home
+    // Si intenta editar sin permisos -> Home (tabs)
     if (editingFarm && !allowedToEdit) {
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: 'Home' }] })
-      );
+      resetToHome();
       return;
     }
   }, [user, token, editingFarm, allowedToCreate, allowedToEdit, navigation]);
@@ -65,7 +71,10 @@ export default function FarmFormScreen({ navigation, route }) {
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitas permitir acceso a fotos para seleccionar una imagen.');
+      Alert.alert(
+        'Permiso requerido',
+        'Necesitas permitir acceso a fotos para seleccionar una imagen.'
+      );
       return;
     }
 
@@ -159,9 +168,8 @@ export default function FarmFormScreen({ navigation, route }) {
         return;
       }
 
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: 'Home' }] })
-      );
+      // ✅ Antes era { name: 'Home' }. Ahora debe volver a Tabs -> HomeTab
+      resetToHome();
     } catch (e) {
       console.error(e);
       Alert.alert('Error', `No se pudo subir/guardar.\n\n${String(e.message || e)}`);
@@ -173,29 +181,57 @@ export default function FarmFormScreen({ navigation, route }) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.label}>Nombre *</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ej: Finca La Esperanza" />
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={setName}
+        placeholder="Ej: Finca La Esperanza"
+      />
 
       <Text style={styles.label}>Ubicación</Text>
-      <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Ej: Manizales, Caldas" />
+      <TextInput
+        style={styles.input}
+        value={location}
+        onChangeText={setLocation}
+        placeholder="Ej: Manizales, Caldas"
+      />
 
       <Text style={styles.label}>Área (ha)</Text>
-      <TextInput style={styles.input} value={areaHa} onChangeText={setAreaHa} keyboardType="numeric" placeholder="Ej: 12.5" />
+      <TextInput
+        style={styles.input}
+        value={areaHa}
+        onChangeText={setAreaHa}
+        keyboardType="numeric"
+        placeholder="Ej: 12.5"
+      />
 
       <Text style={styles.label}>Imagen</Text>
       <Pressable style={styles.secondaryBtn} onPress={pickImage} disabled={loading}>
-        <Text style={styles.secondaryBtnText}>{imageUri ? 'Cambiar imagen' : 'Seleccionar imagen'}</Text>
+        <Text style={styles.secondaryBtnText}>
+          {imageUri ? 'Cambiar imagen' : 'Seleccionar imagen'}
+        </Text>
       </Pressable>
 
-      {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} /> : <Text style={styles.helper}>Sin imagen</Text>}
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.preview} />
+      ) : (
+        <Text style={styles.helper}>Sin imagen</Text>
+      )}
 
-      <Pressable style={[styles.primaryBtn, loading && { opacity: 0.7 }]} onPress={onSave} disabled={loading}>
+      <Pressable
+        style={[styles.primaryBtn, loading && { opacity: 0.7 }]}
+        onPress={onSave}
+        disabled={loading}
+      >
         {loading ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <ActivityIndicator />
             <Text style={styles.primaryBtnText}>Guardando...</Text>
           </View>
         ) : (
-          <Text style={styles.primaryBtnText}>{editingFarm ? 'Guardar cambios' : 'Crear finca'}</Text>
+          <Text style={styles.primaryBtnText}>
+            {editingFarm ? 'Guardar cambios' : 'Crear finca'}
+          </Text>
         )}
       </Pressable>
     </ScrollView>
